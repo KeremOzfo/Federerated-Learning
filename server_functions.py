@@ -48,6 +48,41 @@ def update_model(model, prev_model, lr, momentum, weight_decay):
         prevIncrement.data = incrementVal
     return None
 
+def update_model_2(model, prev_model, device, args):
+    if args.alg_type == 'alg1':
+        for param, prevIncrement in zip(model.parameters(), prev_model.parameters()):
+            incrementVal = param.grad.data.add(args.W_decay, param.data)
+            incrementVal.add_(args.momentum, prevIncrement.data)
+            incrementVal.mul_(args.lr)
+            param.data.add_(-1, incrementVal)
+            prevIncrement.data = incrementVal
+    elif args.alg_type == 'alg2':
+        for param, prevIncrement in zip(model.parameters(), prev_model.parameters()):
+            incrementVal = param.grad.data.add(args.W_decay, param.data)
+            incrementCopy = torch.clone(incrementVal).to(device)
+            incrementVal.mul_(args.sigma)
+            incrementVal.add_(1-args.sigma, prevIncrement.data)
+            incrementVal.mul_(args.lr)
+            param.data.add_(-1, incrementVal)
+            newM = torch.zeros_like(prevIncrement.data).to(device)
+            newM.add_(args.beta, prevIncrement)
+            newM.add_(1-args.beta, incrementCopy)
+            prevIncrement.data = newM
+    elif args.alg_type == 'alg3':
+        for param, prevIncrement in zip(model.parameters(), prev_model.parameters()):
+            incrementVal = param.grad.data.add(args.W_decay, param.data)
+            incrementCopy = torch.clone(incrementVal).to(device)
+            incrementVal.add_(args.sigma, prevIncrement.data)
+            incrementVal.mul_(args.lr)
+            param.data.add_(-1, incrementVal)
+            newM = torch.zeros_like(prevIncrement.data).to(device)
+            newM.add_(args.beta, prevIncrement)
+            newM.add_(1-args.beta, incrementCopy)
+            prevIncrement.data = newM
+    else:
+        raise Exception('wrong local update algorithm')
+    return None
+
 
 def get_grad_flattened(model, device):
     grad_flattened = torch.empty(0).to(device)

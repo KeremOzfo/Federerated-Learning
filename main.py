@@ -10,13 +10,12 @@ device = torch.device("cpu")
 args = args_parser()
 
 if __name__ == '__main__':
-    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    device = torch.device(f"cuda:{args.gpu_id}" if torch.cuda.is_available() else "cpu")
     simulation_ID = int(random.uniform(1,999))
     print('device:',device)
     args = args_parser()
     for arg in vars(args):
        print(arg, ':', getattr(args, arg))
-    results = []
     x = datetime.datetime.now()
     date = x.strftime('%b') + '-' + str(x.day)
     newFile = date + '-sim_ID-' + str(simulation_ID)
@@ -35,9 +34,9 @@ if __name__ == '__main__':
                 f.write(line + '\n')
             f.write('############ Results ###############' + '\n')
             f.close()
-        s_loc = date + f'federated_{args.num_client}' + '--' + str(i)
+        s_loc = date + f'federated_prototype_{args.num_client}' + '--' + str(i)
         s_loc = os.path.join(n_path,s_loc)
         np.save(s_loc,accs)
         f = open(n_path + '/simulation_Details.txt', 'a+')
-        f.write('Trial ' + str(i) + ' results at ' + str(accs[args.num_epoch]) + '\n')
+        f.write('Trial ' + str(i) + ' results at ' + str(accs[len(accs)-1]) + '\n')
         f.close()
