@@ -75,6 +75,8 @@ def get_dataset(args):
     else:
         raise ValueError('dataset name can only be mnist, fmnist or cifar10')
 
+    if args.debug:
+        trainset, testset = get_mnist_dataset()
     return trainset, testset
 
 def get_indices(trainset, args):
@@ -88,6 +90,8 @@ def get_indices(trainset, args):
         inds = get_non_iid_index_2(trainset,args)
     else:
         raise ValueError('Dataset distribution can only be iid or non_iid')
+    if args.debug:
+        inds = get_iid_index(trainset, args)
     return inds
 
 
@@ -113,14 +117,14 @@ def get_non_iid_index(trainset, args):
     return indx_sample
 
 def get_non_iid_index_2(trainset, args):
-
+    ##CIFAR-10 exclusive
     labels = np.asarray(trainset.targets)
     num_samples = len(labels)
     userVec = np.zeros((args.num_client))
     num_class = 10
     inds_sorted = np.argsort(labels)
-    class_size = int(num_samples/ 10)
-    blocks_per_class = int(args.num_client * args.numb_cls_usr / 10)
+    class_size = int(num_samples/ num_class)
+    blocks_per_class = int(args.num_client * args.numb_cls_usr / num_class)
     data = []
     img_per_block = int(class_size/blocks_per_class)
     for i in range(num_class):
@@ -128,7 +132,6 @@ def get_non_iid_index_2(trainset, args):
         class_datas = []
         excess_data = class_size % blocks_per_class
         for y in range(blocks_per_class):
-            endp = 0
             if excess_data !=0:
                 endp = startp + img_per_block + 1
                 excess_data -=1

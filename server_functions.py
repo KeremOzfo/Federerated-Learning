@@ -32,6 +32,11 @@ def push_model(model_user, model_server, num_cl):
         param_server.data += param_user.data / num_cl
     return None
 
+def push_model2(model_user, model_server, constant):
+    for param_user, param_server in zip(model_user.parameters(), model_server.parameters()):
+        param_server.data.add_(constant,param_user.data)
+    return None
+
 
 def initialize_zero(model):
     for param in model.parameters():
@@ -147,6 +152,7 @@ def get_indices(net_sizes, net_nelements):
 
 def make_grad_unflattened(model, grad_flattened, net_sizes, ind_pairs):
     # unflattens the grad_flattened into the model.grad
+    zero_grad_ps(model)
     i = 0
     for p in model.parameters():
         if p.requires_grad:
@@ -209,65 +215,7 @@ def lr_warm_up(optimizers, num_workers, epoch, start_lr):
                 param_group['lr'] = (lr_change * epoch) + 0.1
 
 
-def sparse_timeC(grad_flat, sparsity_window, exclusive_sparsity_windows, prev_ps_mask, device):
-    exclusive_sparse = math.ceil(len(grad_flat) / (sparsity_window * exclusive_sparsity_windows))
-    sparsed_worker_model = (grad_flat * prev_ps_mask).to(device)
-    exclusive_grads = grad_flat.sub(sparsed_worker_model).to(device)
-    excl_tops, excl_ind = torch.topk(exclusive_grads.abs(), k=exclusive_sparse, dim=0)
-    exclusive_mask = (exclusive_grads * 0).to(device)
-    exclusive_mask[excl_ind] = 1
-    mask = prev_ps_mask.add(exclusive_mask)
-    grad_flat.mul_(mask)
-    return None
 
-
-def sparse_timeC_alt(grad_flat, sparsity_window, exclusive_sparsity_windows, layer_spar, prev_ps_mask, ind_pairs,
-                     device):
-    exclusive_sparse = math.ceil(len(grad_flat) / (sparsity_window * exclusive_sparsity_windows))
-    exclusive_mask = 1 - prev_ps_mask
-    exclusive_grads = (grad_flat * exclusive_mask).to(device)
-    inds = torch.empty(0, dtype=torch.float).to(device)
-    worker_mask = torch.zeros_like(grad_flat)
-    for layer in ind_pairs:
-        startPoint = (layer[0])
-        endPoint = (layer[1])
-        layer_len = endPoint - startPoint
-        l_top_k = math.ceil(layer_len / layer_spar)
-        l_vals, l_ind = torch.topk((exclusive_grads[startPoint:endPoint]).abs(), k=l_top_k, dim=0)
-        l_ind.add_(startPoint)
-        inds = torch.cat((inds.float(), l_ind.float()), 0)
-    inds = inds.long()
-    if exclusive_sparse > inds.numel():
-        clone_worker_grad = torch.clone(exclusive_grads)
-        clone_worker_grad[inds] = 0
-        topk = exclusive_sparse - inds.numel()
-        inds_ = torch.topk(clone_worker_grad.abs(), k=topk, dim=0)[1]
-        inds = torch.cat((inds, inds_), 0)
-    worker_mask[inds] = 1
-    worker_mask += prev_ps_mask
-    grad_flat *= worker_mask
-    return None
-
-
-def sparse_special_mask(flat_grad, sparsity_window, layer_spar, ind_pairs, device):
-    inds = torch.empty(0).to(device)
-    for layer in ind_pairs:
-        startPoint = (layer[0])
-        endPoint = (layer[1])
-        layer_len = endPoint - startPoint
-        l_top_k = math.ceil(layer_len / layer_spar)
-        l_vals, l_ind = torch.topk((flat_grad[startPoint:endPoint]).abs(), k=l_top_k, dim=0)
-        l_ind.add_(startPoint)
-        inds = torch.cat((inds.float(), l_ind.float()), 0)
-    inds = inds.long()
-    clone_grad = torch.clone(flat_grad).to(device)
-    clone_grad[inds] = 0
-    topk = math.ceil(len(flat_grad) / (sparsity_window)) - inds.numel()
-    vals_, inds_ = torch.topk(clone_grad.abs(), k=topk, dim=0)
-    inds = torch.cat((inds, inds_), 0)
-    clone_grad *= 0
-    clone_grad[inds] = 1
-    return clone_grad
 
 
 def groups(grad_flat, group_len, denominator, device):

@@ -18,12 +18,35 @@ if __name__ == '__main__':
        print(arg, ':', getattr(args, arg))
     x = datetime.datetime.now()
     date = x.strftime('%b') + '-' + str(x.day)
-    newFile = date + '-sim_ID-' + str(simulation_ID)
+    if args.mode == 'AFL':
+        newFile = '{}-{}-VER:{}-{}-cls_{}-H_{}-A:{}-B:{}-ID_{}'.format(date, args.mode, args.l_update_ver,
+        args.P_M_ver, args.numb_cls_usr, args.LocalIter,args.alfa,args.beta,simulation_ID)
+    else:
+        newFile = '{}-{}-cls_{}-H_{}-A:{}-B:{}-ID_{}'.format(date,args.mode,args.numb_cls_usr,
+                                                             args.LocalIter,args.alfa,args.beta,simulation_ID)
     if not os.path.exists(os.getcwd() + '/Results'):
         os.mkdir(os.getcwd() + '/Results')
     n_path = os.path.join(os.getcwd(), 'Results', newFile)
     for i in range(5):
-        accs = train(args, device)
+        accs = None
+        if args.mode == 'normal':
+            accs = train(args, device)
+        elif args.mode == 'slowmo':
+            accs = train_slowmo(args,device)
+        elif args.mode == 'normal2':
+            accs = train_2(args, device)
+        elif args.mode == 'nesterov':
+            accs = train_nesterov(args,device)
+        elif args.mode == 'fed_avg':
+            accs = train_fedavg(args,device)
+        elif args.mode == 'fedADC':
+            accs = train_fedADC(args, device)
+        elif args.mode == 'AFL':
+            accs = train_AFL(args, device)
+        elif args.mode == 'fedADCp':
+            accs = train_fedADCp(args, device)
+        elif args.mode == 'fedADCn':
+            accs = train_fedADCn(args, device)
         if i == 0:
             os.mkdir(n_path)
             f = open(n_path + '/simulation_Details.txt', 'w+')
@@ -34,7 +57,7 @@ if __name__ == '__main__':
                 f.write(line + '\n')
             f.write('############ Results ###############' + '\n')
             f.close()
-        s_loc = date + f'federated_prototype_{args.num_client}' + '--' + str(i)
+        s_loc = date + f'federated_prototype_{args.mode}' + '--' + str(i)
         s_loc = os.path.join(n_path,s_loc)
         np.save(s_loc,accs)
         f = open(n_path + '/simulation_Details.txt', 'a+')

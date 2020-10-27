@@ -274,4 +274,6 @@ def get_net(args):
     else:
         raise ValueError('NN model can only be mnist, fmnist, simplecifar, resnet18',
                          'Be sure that NN model is compatible with the dataset')
+    if args.debug:
+        model = get_mnistnet()
     return model
