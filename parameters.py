@@ -4,7 +4,6 @@ import argparse
 def args_parser():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--gpu_id', type=int, default=0, help='cuda:No')
 
     parser.add_argument('--debug', type=bool, default=False, help='iid mnist with mnsit networkk')
     # dataset related
@@ -42,6 +41,7 @@ def args_parser():
 def args_parser_loop():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--worker_per_gpu', type=int, default=2, help='Worker-Per-GPU')
     parser.add_argument('--debug', type=bool, default=False, help='iid mnist with mnsit networkk')
     # dataset related
     parser.add_argument('--dataset_name', type=str, default='cifar10', help='mnist, fmnist, cifar10')

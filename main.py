@@ -68,7 +68,7 @@ def main_treaded(args):
 if __name__ == '__main__':
     args = args_parser_loop()
     total_gpu = torch.cuda.device_count()
-    worker_per_gpu = 2
+    worker_per_gpu = args.worker_per_gpu
     max_active_user = np.min([total_gpu * worker_per_gpu, mp.cpu_count()])
     combinations = []
     work_load=[]
