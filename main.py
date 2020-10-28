@@ -10,6 +10,7 @@ import numpy as np
 import multiprocessing as mp
 import itertools
 import torch.multiprocessing as mpcuda
+from torch.multiprocessing import set_start_method
 
 def main_treaded(args):
     device = torch.device(f"cuda:{args.gpu_id}" if torch.cuda.is_available() else "cpu")
@@ -101,11 +102,12 @@ if __name__ == '__main__':
         while selected_gpu in args.excluded_gpus: ##check gpu
             selected_gpu = int((selected_gpu +1) % total_gpu)
         w_parser.add_argument('--gpu_id', type=int, default=selected_gpu, help='')
-
         w_args = w_parser.parse_args()
+
+        #set_start_method('spawn')
         if len(jobs) < max_active_user:
             if torch.cuda.is_available():
-                p = mpcuda.spawn(fn= main_treaded,args=(w_args,))
+                p = mpcuda.Process(target=main_treaded, args=(w_args,))
             else:
                 p = mp.Process(target=main_treaded, args=(w_args,))
             jobs.append(p)
