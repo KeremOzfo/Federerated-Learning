@@ -12,7 +12,7 @@ import itertools
 import torch.multiprocessing as mpcuda
 from torch.multiprocessing import set_start_method
 
-def main_treaded(workerid, args):
+def main_treaded(args):
     device = torch.device(f"cuda:{args.gpu_id}" if torch.cuda.is_available() else "cpu")
     simulation_ID = int(random.uniform(1, 999))
     print('device:', device)
@@ -104,16 +104,22 @@ if __name__ == '__main__':
         w_parser.add_argument('--gpu_id', type=int, default=selected_gpu, help='')
         w_args = w_parser.parse_args()
 
-        #set_start_method('spawn')
-        if len(jobs) < max_active_user:
-            if torch.cuda.is_available():
-                p = mpcuda.spawn(fn=main_treaded, args=(w_args,))
+        if torch.cuda.is_available():
+            if len(jobs) < max_active_user:
+                p = mpcuda.Process(target=main_treaded, args=(w_args,))
+                p.start()
+                jobs.append(p)
             else:
-                p = mp.Process(target=main_treaded, args=(0,w_args,))
-            jobs.append(p)
-            p.start()
+                for job in jobs:
+                    job.join()
+                jobs = []
         else:
-            for job in jobs:
-                job.join()
-            jobs = []
+            if len(jobs) < max_active_user:
+                p = mp.Process(target=main_treaded, args=(w_args,))
+                jobs.append(p)
+                p.start()
+            else:
+                for job in jobs:
+                    job.join()
+                jobs = []
 

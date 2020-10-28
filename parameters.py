@@ -27,7 +27,7 @@ def args_parser_loop():
     parser.add_argument('--phi', type=float, default=0.1, help='fedADC local momentum constant')
     parser.add_argument('--sigma', type=float, default=0.95, help='learning_rate')
     parser.add_argument('--gamma', type=float, default=1, help='learning_rate')
-    parser.add_argument('--num_client', type=int, default=100, help='number of clients')
+    parser.add_argument('--num_client', type=int, default=10, help='number of clients')
     parser.add_argument('--cl', type=float, default=0.2, help='selected client ratio')
     parser.add_argument('--bs', type=int, default=64, help='batchsize')
     parser.add_argument('--lr', type=list, default=[0.01, 0.025, 0.05, 0.1], help='learning_rate')
