@@ -104,6 +104,11 @@ if __name__ == '__main__':
         w_parser.add_argument('--gpu_id', type=int, default=selected_gpu, help='')
         w_args = w_parser.parse_args()
 
+        try:
+            set_start_method('spawn')
+        except RuntimeError:
+            pass
+
         if torch.cuda.is_available():
             if len(jobs) < max_active_user:
                 p = mpcuda.Process(target=main_treaded, args=(w_args,))
