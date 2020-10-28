@@ -75,7 +75,7 @@ if __name__ == '__main__':
     w_parser = argparse.ArgumentParser()
     for arg in vars(args):
         arg_type = type(getattr(args,arg))
-        if arg_type == list and arg != 'lr_change':
+        if arg_type == list and arg != 'lr_change' and arg != 'excluded_gpus':
             work_ = [n for n in getattr(args, arg)]
             work_load.append(work_)
     for t in itertools.product(*work_load):
@@ -87,7 +87,7 @@ if __name__ == '__main__':
         listC = 0
         for arg in vars(args):
             arg_type = type(getattr(args, arg))
-            if arg_type == list and arg != 'lr_change':
+            if arg_type == list and arg != 'lr_change' and arg != 'excluded_gpus':
                 new_type = type(combination[listC])
                 w_parser.add_argument('--{}'.format(arg), type=new_type, default=combination[listC], help='')
                 listC +=1
@@ -95,12 +95,14 @@ if __name__ == '__main__':
                 val = getattr(args, arg)
                 new_type = type(getattr(args, arg))
                 w_parser.add_argument('--{}'.format(arg), type=new_type, default=val, help='')
-        w_parser.add_argument('--gpu_id', type=int, default=int(len(jobs) % total_gpu), help='cuda:No')
+        selected_gpu = int(len(jobs) % total_gpu)
+        while selected_gpu in args.excluded_gpus:
+            selected_gpu = int((selected_gpu +1) % total_gpu)
+        w_parser.add_argument('--gpu_id', type=int, default=selected_gpu, help='')
         w_args = w_parser.parse_args()
         if len(jobs) < max_active_user:
             p = mp.Process(target=main_treaded, args=(w_args,))
             jobs.append(p)
-            print(jobs)
             p.start()
         else:
             for job in jobs:

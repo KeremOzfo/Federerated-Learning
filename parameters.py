@@ -42,6 +42,7 @@ def args_parser_loop():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--worker_per_gpu', type=int, default=2, help='Worker-Per-GPU')
+    parser.add_argument('--excluded_gpus', type =list, default=[], help='bypassed gpus')
     parser.add_argument('--debug', type=bool, default=False, help='iid mnist with mnsit networkk')
     # dataset related
     parser.add_argument('--dataset_name', type=str, default='cifar10', help='mnist, fmnist, cifar10')
