@@ -710,7 +710,7 @@ def train_fedADCp(args, device):
                 selected_avg.add_(1 / len(selected_clients), new_dif)
             selected_avg.mul_(1 / args.lr)  ## pseudo grad
             new_momentum = old_momentum.mul(args.beta)
-            new_momentum.add_(1 - args.beta, selected_avg)
+            new_momentum.add_(1 - args.beta,selected_avg)
             ps_model_flat.sub_(args.alfa * args.lr, new_momentum)
 
             sf.make_model_unflattened(net_ps_prev, new_momentum, net_sizes, ind_pairs)
