@@ -103,6 +103,7 @@ if __name__ == '__main__':
             selected_gpu = int((selected_gpu +1) % total_gpu)
         w_parser.add_argument('--gpu_id', type=int, default=selected_gpu, help='')
         w_args = w_parser.parse_args()
+        model = get_net(w_args)
 
         try:
             set_start_method('spawn')
@@ -111,6 +112,7 @@ if __name__ == '__main__':
 
         if torch.cuda.is_available():
             if len(jobs) < max_active_user:
+                model.share_memory()
                 p = mpcuda.Process(target=main_treaded, args=(w_args,))
                 p.start()
                 jobs.append(p)
