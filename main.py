@@ -95,10 +95,12 @@ if __name__ == '__main__':
                 val = getattr(args, arg)
                 new_type = type(getattr(args, arg))
                 w_parser.add_argument('--{}'.format(arg), type=new_type, default=val, help='')
-        selected_gpu = int(len(jobs) % total_gpu)
-        while selected_gpu in args.excluded_gpus:
+
+        selected_gpu = int(len(jobs) % total_gpu) ## assign gpu for the work
+        while selected_gpu in args.excluded_gpus: ##check gpu
             selected_gpu = int((selected_gpu +1) % total_gpu)
         w_parser.add_argument('--gpu_id', type=int, default=selected_gpu, help='')
+
         w_args = w_parser.parse_args()
         if len(jobs) < max_active_user:
             p = mp.Process(target=main_treaded, args=(w_args,))

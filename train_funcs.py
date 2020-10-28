@@ -535,7 +535,6 @@ def train_AFL(args, device):
             print('accuracy:',acc*100)
     return accuracys
 
-
 def train_fedADC(args, device):
 
     num_client = args.num_client
