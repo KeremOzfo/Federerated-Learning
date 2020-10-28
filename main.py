@@ -98,10 +98,10 @@ if __name__ == '__main__':
                 new_type = type(getattr(args, arg))
                 w_parser.add_argument('--{}'.format(arg), type=new_type, default=val, help='')
 
-        selected_gpu = int(len(jobs) % total_gpu) ## assign gpu for the work
+        selected_gpu = int(len(jobs) % total_gpu) ## select gpu for the work
         while selected_gpu in args.excluded_gpus: ##check gpu
-            selected_gpu = int((selected_gpu +1) % total_gpu)
-        w_parser.add_argument('--gpu_id', type=int, default=selected_gpu, help='')
+            selected_gpu = int((selected_gpu +1) % total_gpu) ## update gpu-id
+        w_parser.add_argument('--gpu_id', type=int, default=selected_gpu, help='') ## assign gpu for the work
         w_args = w_parser.parse_args()
         model = get_net(w_args)
 
@@ -110,23 +110,15 @@ if __name__ == '__main__':
         except RuntimeError:
             pass
 
-        if torch.cuda.is_available():
-            if len(jobs) < max_active_user:
+        if len(jobs) < max_active_user:
+            if torch.cuda.is_available():
                 model.share_memory()
                 p = mpcuda.Process(target=main_treaded, args=(w_args,))
-                p.start()
-                jobs.append(p)
-            else:
-                for job in jobs:
-                    job.join()
-                jobs = []
-        else:
-            if len(jobs) < max_active_user:
+            else: ## use threaded CPU
                 p = mp.Process(target=main_treaded, args=(w_args,))
-                jobs.append(p)
-                p.start()
-            else:
-                for job in jobs:
-                    job.join()
-                jobs = []
-
+            p.start()
+            jobs.append(p)
+        else:
+            for job in jobs:
+                job.join()
+            jobs = []
