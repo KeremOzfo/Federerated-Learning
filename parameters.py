@@ -34,6 +34,5 @@ def args_parser_loop():
     parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
     parser.add_argument('--W_decay', type=float, default=1e-4, help='weight decay Value')
 
-
     args = parser.parse_args()
     return args
