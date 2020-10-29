@@ -14,7 +14,7 @@ def args_parser_loop():
     parser.add_argument('--numb_cls_usr', type=list, default=[2,3,4], help='number of class per user if non_iid2 selected')
 
     # Federated params
-    parser.add_argument('--mode', type=str, default='AFL', help='normal,slowmo,benchmark,fed_avg,AFL')
+    parser.add_argument('--mode', type=str, default='slowmo', help='normal,slowmo,benchmark,fed_avg,AFL')
     parser.add_argument('--comm_rounds', type=int, default=500, help='number of epochs')
     parser.add_argument('--LocalIter', type=int, default=8, help='communication workers')
     parser.add_argument('--Lmomentum', type=float, default=0, help='momentum')
