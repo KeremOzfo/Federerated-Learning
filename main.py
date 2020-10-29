@@ -21,11 +21,11 @@ def main_treaded(args):
     x = datetime.datetime.now()
     date = x.strftime('%b') + '-' + str(x.day)
     if args.mode == 'AFL':
-        newFile = '{}-{}-VER:{}-{}-cls_{}-H_{}-A:{}-B:{}-LR:{}'.format(date, args.mode, args.l_update_ver,
+        newFile = '{}-VER_{}-{}-cls_{}-H_{}-A_{}-B_{}-LR_{}'.format(args.mode, args.l_update_ver,
                                                                        args.P_M_ver, args.numb_cls_usr, args.LocalIter,
                                                                        args.alfa, args.beta, args.lr)
     else:
-        newFile = '{}-{}-cls_{}-H_{}-A:{}-B:{}-LR:{}'.format(date, args.mode, args.numb_cls_usr,
+        newFile = '{}-cls_{}-H_{}-A:{}-B:{}-LR:{}'.format(args.mode, args.numb_cls_usr,
                                                              args.LocalIter, args.alfa, args.beta, args.lr)
     if not os.path.exists(os.getcwd() + '/Results'):
         os.mkdir(os.getcwd() + '/Results')

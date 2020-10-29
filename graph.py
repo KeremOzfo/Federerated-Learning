@@ -1,33 +1,43 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from os import *
+from parameters import *
 import math
 from itertools import cycle
-from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
+import itertools
+import argparse
+
+def getCombinations():
+    work_load = []
+    combinations = []
+    args = args_parser_loop()
+    for arg in vars(args):
+        arg_type = type(getattr(args, arg))
+        if arg_type == list and arg != 'lr_change' and arg != 'excluded_gpus':
+            work_ = [n for n in getattr(args, arg)]
+            work_load.append(work_)
+    for t in itertools.product(*work_load):
+        combinations.append(t)
+    return combinations
 
 def special_adress():
     adress=[]
     labels = []
-    # labels = ['alg1-old','Benchmark-Federated(no M)', 'alg1beta9-sigma9', 'alg2beta9-sigma8' , 'alg2beta9-sigma9'
-    #           , 'alg2beta10-sigma8', 'alg2beta10-sigma9', 'alg2beta95-sigma8', 'alg2beta95-sigma9'
-    #           , 'alg3beta9-sigma8', 'alg3beta9-sigma9', 'alg3beta10-sigma8', 'alg3beta10-sigma9']
-    #
-    # labels = ['alg1-beta9-sigma9-gamma10','alg2-beta9-sigma9-gamma9','alg2-beta9-sigma9-gamma10',
-    #           'alg2-beta9-sigma95-gamma10','alg2-beta95-sigma9-gamma9','alg2-beta95-sigma9--gamma10'
-    #           ,'slowmo-alpha9-beta8', 'slowmo-alpha9-beta9', 'slowmo-alpha10-beta8', 'slowmo-alpha10-beta9']
+    args = args_parser_loop()
+    combinations = getCombinations()
 
-    # labels = ['slowmo2cls', 'slowmo3cls','slowmo4cls10iter',
-    #           'new_nestrov2cls', 'new_nestrov3cls', 'new_nestrov4cls10L',
-    #           'fedavg_2cls','fedavg_3cls','fedavg_4cls10L']
-    #labels = ['SlowMo-cls_4','SlowMo-cls_3','SlowMo-cls_2']
+    for combination in combinations:
+        if args.mode == 'AFL':
+            newFile = '{}-VER_{}-{}-cls_{}-H_{}-A_{}-B_{}-LR_{}'.format(args.mode, args.l_update_ver,
+                                                                           args.P_M_ver, combination[0], args.LocalIter,
+                                                                           args.alfa, combination[1], combination[2])
+        else:
+            newFile = '{}-cls_{}-H_{}-A:{}-B:{}-LR:{}'.format(args.mode, args.numb_cls_usr,
+                                                                 args.LocalIter, args.alfa, args.beta, args.lr)
 
-    folder = 'slowmo'
-    for dir in listdir('Results/{}'.format(folder)):
-        labels.append(str(dir))
-
-
-    for l in labels:
-        adress.append('Results/{}/{}'.format(folder,l))
+        adress.append('Results/{}'.format(newFile))
+        labels.append(newFile)
+    print(labels)
 
 
 
@@ -40,17 +50,18 @@ def compile_results(adress):
     counter = 0
     d_counter = 0
     for i, dir in enumerate(listdir(adress)):
-        vec = np.load(adress + '/'+dir)
-        final_result = vec[len(vec)-1]
-        if final_result>20:
-            f_results.append(final_result)
-        else:
-            d_counter +=1
-        if len(results)==0 and final_result>20:
-            results = vec/len(listdir(adress))
-        elif final_result>20:
-            results += vec/len(listdir(adress))
-        counter +=1
+        if dir[0:3] != 'sim':
+            vec = np.load(adress + '/'+dir)
+            final_result = vec[len(vec)-1]
+            if final_result>20:
+                f_results.append(final_result)
+            else:
+                d_counter +=1
+            if len(results)==0 and final_result>20:
+                results = vec/len(listdir(adress))
+            elif final_result>20:
+                results += vec/len(listdir(adress))
+            counter +=1
     avg = 'DIVERGE' if len(f_results) ==0 else np.average(f_results)
     st_dev ='DIVERGE' if len(f_results) ==0 else np.std(f_results)
 
@@ -123,8 +134,13 @@ def table(data, legends,interval):
 def concateresults(dirsets):
     all_results =[]
     for set in dirsets:
-        all_results.append(compile_results(set)[0])
-        print(compile_results(set)[1])
+        try:
+            listdir(set)
+            all_results.append(compile_results(set)[0])
+            print(compile_results(set)[1])
+        except:
+            print('patlamış',set)
+            continue
     return all_results
 
 
