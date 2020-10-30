@@ -32,19 +32,18 @@ def special_adress():
                                                                            args.P_M_ver, combination[0], args.LocalIter,
                                                                            args.alfa, combination[1], combination[2])
         else:
-            newFile = '{}-cls_{}-H_{}-A:{}-B:{}-LR:{}'.format(args.mode, args.numb_cls_usr,
-                                                                 args.LocalIter, args.alfa, args.beta, args.lr)
+            newFile = '{}-cls_{}-H_{}-A_{}-B_{}-LR_{}'.format(args.mode, combination[0],
+                                                                 args.LocalIter, args.alfa, combination[1], combination[2])
 
-        adress.append('Results/{}'.format(newFile))
+        adress.append('Results/Slowmo/{}'.format(newFile))
         labels.append(newFile)
-    print(labels)
 
 
 
     assert len(adress) == len(labels)
     return adress,labels
 
-def compile_results(adress):
+def compile_results(adress ,label):
     results = []
     f_results = []
     counter = 0
@@ -65,7 +64,7 @@ def compile_results(adress):
     avg = 'DIVERGE' if len(f_results) ==0 else np.average(f_results)
     st_dev ='DIVERGE' if len(f_results) ==0 else np.std(f_results)
 
-    return results, [adress,avg,st_dev, d_counter/counter*100]
+    return results, [label, avg,st_dev, d_counter/counter*100]
 
 def cycle_graph_props(colors,markers,linestyles):
     randoms =[]
@@ -124,15 +123,15 @@ def table(data, legends,interval):
     plt.show()
 
 
-def concateresults(dirsets):
+def concateresults(dirsets, labels):
     all_results =[]
-    for set in dirsets:
+    for set, label in zip(dirsets,labels):
         try:
             listdir(set)
-            all_results.append(compile_results(set)[0])
-            print(compile_results(set)[1])
+            all_results.append(compile_results(set,label)[0])
+            print(compile_results(set,label)[1])
         except:
-            print('patlamış',set)
+            print('patlamış',label)
             continue
     return all_results
 
@@ -149,8 +148,8 @@ for tpye in types:
         labels.append(tpye +'--'+ nn)
 
 intervels = 5
-labels = special_adress()[1]
-results = concateresults(special_adress()[0])
+adress,labels = special_adress()
+results = concateresults(adress,labels)
 #results = concateresults(locations)
 graph(results,labels,intervels)
 #table(results,labels,intervels)
