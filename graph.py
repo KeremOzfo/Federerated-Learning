@@ -103,18 +103,11 @@ def graph(data, legends,interval):
         for i in range(0,len(d)):
             x_axis.append(i*interval)
         plt.plot(x_axis,d, marker= m ,linestyle = l ,markersize=2, label=legend)
-    #plt.axis([5, 45,70 ,90])
-    #plt.axis([145,155,88,92])
-    #plt.axis([290, 300, 87, 95])
-    #plt.axis([50, 100, 87, 95])
     plt.axis([0, 1000, 50, 90])
     plt.xlabel('Communication Rounds')
     plt.ylabel('Accuracy')
     plt.title('Federated-Learning')
     plt.legend()
-    # ax = plt.table(cellText=table_data, loc='bottom')
-    # ax.set_fontsize(3)
-    # ax.scale(1, 0.5)
     plt.grid(True)
     plt.show()
 

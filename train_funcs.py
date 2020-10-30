@@ -478,7 +478,7 @@ def train_AFL(args, device):
         selected_clients = np.where(worker_vec == 1)[0]
 
         global_M = sf.get_model_flattened(net_ps_prev, device)
-        local_M = global_M.mul(args.beta / args.LocalIter) if args.P_M_ver== 2 \
+        local_M = global_M.mul(args.beta / args.LocalIter) if args.P_M_ver== 1 \
             else global_M.mul(1 / args.LocalIter)
 
         for cl in selected_clients:
