@@ -6,6 +6,7 @@ import math
 from itertools import cycle
 import itertools
 import argparse
+import pandas as pd
 
 def getCombinations():
     work_load = []
@@ -35,7 +36,7 @@ def special_adress():
             newFile = '{}-cls_{}-H_{}-A_{}-B_{}-LR_{}'.format(args.mode, combination[0],
                                                                  args.LocalIter, args.alfa, combination[1], combination[2])
 
-        adress.append('Results/Slowmo/{}'.format(newFile))
+        adress.append('Results/AFL/{}'.format(newFile))
         labels.append(newFile)
 
 
@@ -64,7 +65,7 @@ def compile_results(adress ,label):
     avg = 'DIVERGE' if len(f_results) ==0 else np.average(f_results)
     st_dev ='DIVERGE' if len(f_results) ==0 else np.std(f_results)
 
-    return results, [label, avg,st_dev, d_counter/counter*100]
+    return results, label, avg,st_dev, d_counter/counter*100
 
 def cycle_graph_props(colors,markers,linestyles):
     randoms =[]
@@ -110,29 +111,52 @@ def graph(data, legends,interval):
     plt.grid(True)
     plt.show()
 
-def table(data, legends,interval):
-    fig = plt.figure(dpi=80)
-    ax = fig.add_subplot(1, 1, 1)
-    table_data = []
-    for d, legend in zip(data, legends):
-        table_data.append([legend, d[len(d) - 1]])
-    table = ax.table(cellText=table_data, loc='center')
-    table.set_fontsize(14)
-    table.scale(1, 1)
-    ax.axis('off')
-    plt.show()
+def table(f_results, labels,st_dev, divs):
+    # fig, ax = plt.subplots()
+    datas = [f_results,st_dev,divs]
+    matrix = np.random.randn(len(datas[0]), len(datas))
+    labels = np.transpose(labels)
+    print(np.shape(labels))
+
+    for i,data in enumerate(datas):
+        for y, value in enumerate(data):
+            matrix[y][i] = value
+    # hide axes
+    # fig.patch.set_visible(False)
+    # ax.axis('off')
+    # ax.axis('tight')
+
+    df = pd.DataFrame(matrix, columns=('Result','STDEV','Diverge %'))
+    df_labels =pd.DataFrame(labels, columns=('Simulation',))
+    df = pd.concat([df_labels,df],axis=1)
+    print(df)
+
+    # ax.table(cellText=df.values, colLabels=df.columns, loc='center')
+    # fig.tight_layout()
+    #df.plot()
+    #plt.show()
 
 
 def concateresults(dirsets, labels):
     all_results =[]
+    f_results = []
+    stds = []
+    divergences = []
     for set, label in zip(dirsets,labels):
         try:
             listdir(set)
-            all_results.append(compile_results(set,label)[0])
-            print(compile_results(set,label)[1])
+            result, label ,f_result, st_dev, divprob = compile_results(set,label)
+            all_results.append(result)
+            f_results.append(f_result)
+            stds.append(st_dev)
+            divergences.append(divprob)
         except:
             print('patlamış',label)
+            f_results.append(0)
+            stds.append(0)
+            divergences.append(0)
             continue
+    table(f_results,labels,stds,divergences)
     return all_results
 
 

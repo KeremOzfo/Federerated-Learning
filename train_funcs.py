@@ -827,3 +827,119 @@ def train_fedADCn(args, device):
             accuracys.append(acc * 100)
             print('accuracy:',acc*100)
     return accuracys
+
+def train_AFLdp(args, device):
+
+    num_client = args.num_client
+    trainset, testset = dl.get_dataset(args)
+    sample_inds = dl.get_indices(trainset, args)
+    # PS model
+    net_ps = get_net(args).to(device)
+    net_ps_prev = get_net(args).to(device)
+    sf.initialize_zero(net_ps_prev)
+    prev_models = [get_net(args).to(device) for u in range(num_client)]
+    [sf.initialize_zero(prev_models[u]) for u in range(num_client)]
+
+
+
+    net_users = [get_net(args).to(device) for u in range(num_client)]
+
+    criterions = [nn.CrossEntropyLoss() for u in range(num_client)]
+    testloader = torch.utils.data.DataLoader(testset, batch_size=args.bs, shuffle=False, num_workers=2)
+
+    # synch all clients models models with PS
+    [sf.pull_model(net_users[cl], net_ps) for cl in range(num_client)]
+
+    net_sizes, net_nelements = sf.get_model_sizes(net_ps)
+    ind_pairs = sf.get_indices(net_sizes, net_nelements)
+    N_s = (50000 if args.dataset_name == 'cifar10' else 60000)
+    accuracys = []
+
+    acc = evaluate_accuracy(net_ps, testloader, device)
+    accuracys.append(acc * 100)
+    for run in range(args.comm_rounds):
+        worker_vec = np.zeros(num_client)
+        worker_vec[np.random.choice(range(num_client),int(args.cl * num_client),replace=False)] = 1 ### randomly select workers
+        selected_clients = np.where(worker_vec == 1)[0]
+
+
+        if run< args.LocalIter:
+            for cl in selected_clients:
+                localIter = 0
+
+                while (localIter < args.LocalIter):
+                    trainloader = DataLoader(dl.DatasetSplit(trainset, sample_inds[cl]), batch_size=args.bs,
+                                             shuffle=True)
+                    for data in trainloader:
+                        inputs, labels = data
+                        inputs, labels = inputs.to(device), labels.to(device)
+                        sf.zero_grad_ps(net_users[cl])
+                        predicts = net_users[cl](inputs)
+                        loss = criterions[cl](predicts, labels)
+                        loss.backward()
+                        sf.update_model(net_users[cl], prev_models[cl], lr=args.lr, momentum=args.Lmomentum,
+                                        weight_decay=1e-4)
+                        localIter += 1
+                        if localIter == args.LocalIter:
+                            break
+            ps_model_flat =sf.get_model_flattened(net_ps, device)
+            selected_avg = torch.zeros_like(ps_model_flat).to(device)
+            for cl in selected_clients:  ## update model of the selected group of workers
+                model_flat = sf.get_model_flattened(net_users[cl], device)
+                dif_model = model_flat.sub(1, ps_model_flat)
+                selected_avg.add_(1 / len(selected_clients), dif_model)
+            selected_avg.mul_(1/args.lr) ## pseudo grad
+            old_momentum = sf.get_model_flattened(net_ps_prev, device)
+            new_momentum = old_momentum.mul(args.beta)
+            new_momentum.add_(1,selected_avg)
+            ps_model_flat.add_(args.alfa*args.lr,new_momentum)
+            sf.make_model_unflattened(net_ps_prev, new_momentum, net_sizes, ind_pairs)
+            sf.make_model_unflattened(net_ps, ps_model_flat, net_sizes, ind_pairs)
+            [sf.pull_model(net_users[cl], net_ps) for cl in range(args.num_client)]
+        else:
+            m_t = sf.get_model_flattened(net_ps_prev,device).mul(1/args.LocalIter)
+            for cl in selected_clients:
+                localIter = 0
+                worker_model = sf.get_model_flattened(net_users[cl],device)
+                worker_model_zero = torch.clone(worker_model)
+                local_drift = torch.zeros_like(worker_model).to(device)
+                while (localIter < args.LocalIter):
+                    trainloader = DataLoader(dl.DatasetSplit(trainset, sample_inds[cl]), batch_size=args.bs,
+                                             shuffle=True)
+                    for data in trainloader:
+                        inputs, labels = data
+                        inputs, labels = inputs.to(device), labels.to(device)
+                        worker_model.add_(args.gamma, local_drift)
+                        sf.make_model_unflattened(net_users[cl],worker_model,net_sizes,ind_pairs)
+                        sf.zero_grad_ps(net_users[cl])
+                        predicts = net_users[cl](inputs)
+                        loss = criterions[cl](predicts, labels)
+                        loss.backward()
+                        sf.update_model(net_users[cl], prev_models[cl], lr=args.lr, momentum=args.Lmomentum,
+                                        weight_decay=1e-4)
+                        local_drift = (m_t.mul(-args.lr*localIter)).sub(worker_model.sub(1, worker_model_zero))
+                        localIter += 1
+                        if localIter == args.LocalIter:
+                            break
+            ps_model_flat = sf.get_model_flattened(net_ps, device)
+            selected_avg = torch.zeros_like(ps_model_flat).to(device)
+            for cl in selected_clients:  ## update model of the selected group of workers
+                model_flat = sf.get_model_flattened(net_users[cl], device)
+                dif_model = ps_model_flat.sub(1, model_flat)
+                selected_avg.add_(1 / len(selected_clients), dif_model)
+            selected_avg.mul_(1 / args.lr)  ## pseudo grad
+            old_momentum = sf.get_model_flattened(net_ps_prev, device)
+            new_momentum = old_momentum.mul(args.beta)
+            new_momentum.add_(1, selected_avg)
+            ps_model_flat.sub_(args.alfa * args.lr, new_momentum)
+            sf.make_model_unflattened(net_ps_prev, new_momentum, net_sizes, ind_pairs)
+            sf.make_model_unflattened(net_ps, ps_model_flat, net_sizes, ind_pairs)
+            [sf.pull_model(net_users[cl], net_ps) for cl in range(args.num_client)]
+
+
+
+        if run % 5 == 0:
+            acc = evaluate_accuracy(net_ps, testloader, device)
+            accuracys.append(acc * 100)
+            print('accuracy:',acc*100)
+    return accuracys

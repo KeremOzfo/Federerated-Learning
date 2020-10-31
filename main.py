@@ -50,6 +50,8 @@ def main_treaded(args):
             accs = train_fedADCp(args, device)
         elif args.mode == 'fedADCn':
             accs = train_fedADCn(args, device)
+        elif args.mode == 'AFLdp':
+            accs = train_AFLdp(args,device)
         if i == 0:
             os.mkdir(n_path)
             f = open(n_path + '/simulation_Details.txt', 'w+')
